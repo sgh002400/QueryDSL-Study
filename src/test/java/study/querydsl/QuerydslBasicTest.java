@@ -226,4 +226,42 @@ public class QuerydslBasicTest {
         assertThat(member6.getUsername()).isEqualTo("member6");
         assertThat(memberNull.getUsername()).isNull();
     }
+
+    @Test
+    public void paging1() {
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc()) //orderBy를 넣어야 잘 작동하는지 확인하기 쉽다.
+                .offset(1) //앞에 몇 개를 스킵할지 옵션. 0부터 시작(zero index)임. -> 1이면 하나 스킵함
+                .limit(2) //최대 2건 조회
+                .fetch();
+
+        assertThat(result.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void paging2() {
+
+        QueryResults<Member> queryResults = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults(); //이걸 붙이면 getTotal()을 사용할 수 있으므로 몇 페이지가 만들어져야 하는지 구할 수 있다.
+
+        assertThat(queryResults.getTotal()).isEqualTo(4);
+        assertThat(queryResults.getLimit()).isEqualTo(2);
+        assertThat(queryResults.getOffset()).isEqualTo(1);
+        assertThat(queryResults.getResults().size()).isEqualTo(2);
+
+        /**
+         * count 쿼리가 실행되니 성능상 주의할 것!
+
+         * 실무에서 페이징 쿼리를 작성할 때, 데이터를 조회하는 쿼리는 여러 테이블을 조인해야 하지만,
+         * count 쿼리는 조인이 필요 없는 경우도 있다. 그런데 이렇게 자동화된 count 쿼리는 원본 쿼리와 같이 모두
+         * 조인을 해버리기 때문에 성능이 안나올 수 있다. count 쿼리에 조인이 필요없는 성능 최적화가 필요하다면,
+         * count 전용 쿼리를 별도로 작성해야 한다.
+         */
+    }
 }
