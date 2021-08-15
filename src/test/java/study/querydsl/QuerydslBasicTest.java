@@ -2,6 +2,7 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
@@ -17,6 +18,7 @@ import study.querydsl.domain.QMember;
 import study.querydsl.domain.QTeam;
 import study.querydsl.domain.Team;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.UserDto;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -751,11 +753,32 @@ public class QuerydslBasicTest {
     }
 
     @Test
+    public void findUserDtoByField() {
+
+        //별칭이 다를 때 - 필드 방식은 필드명이 맞아야 들어가고 setter 방식은 프로퍼티명이 맞아야 들어간다.
+        QMember memberSub = new QMember("memberSub");
+
+        List<UserDto> fetch = queryFactory
+                .select(Projections.fields(UserDto.class,
+                                member.username.as("name"), //.as로 별칭을 만들어준다. / 이 부분도 ExpressionUtils.as(member.username, "name").as("name"),로 쓸 수 있긴 하다.
+                                ExpressionUtils.as( //서브 쿼리를 사용할 때 이름이 없어서 alias를 줘야 하는 상황임.
+                                        JPAExpressions
+                                                .select(memberSub.age.max())
+                                                .from(memberSub), "age")))
+                .from(member)
+                .fetch();
+
+        for (UserDto userDto : fetch) {
+            System.out.println("userDto = " + userDto);
+        }
+    }
+
+    @Test
     public void findDtoByConstructor() {
 
         //3. 생성자 사용
 
-        //MemberDto의 생성자를 사용해서 넣어주는 방식. 생성자와 타입이 맞아야 들어간다.
+        //MemberDto의 생성자를 사용해서 넣어주는 방식. 생성자와 타입이 맞아야 들어간다. -> 타입을 보고 값을 넣기 때문에 이름이 달라도 상관 없다.
         List<MemberDto> result = queryFactory
                 .select(Projections.constructor(MemberDto.class,
                         member.username,
