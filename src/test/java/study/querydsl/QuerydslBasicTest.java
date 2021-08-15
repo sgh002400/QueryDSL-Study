@@ -3,6 +3,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -598,6 +599,44 @@ public class QuerydslBasicTest {
 
         for (String s : result) {
             System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    public void goodCase() { //orderBy에서 Case 문 함께 사용하기 예제
+
+        /**
+         * 예를 들어서 다음과 같은 임의의 순서로 회원을 출력하고 싶다면?
+         * 1. 0 ~ 30살이 아닌 회원을 가장 먼저 출력
+         * 2. 0 ~ 20살 회원 출력
+         * 3. 21 ~ 30살 회원 출력
+         */
+
+        NumberExpression<Integer> rankPath = new CaseBuilder()
+                .when(member.age.between(0, 20)).then(2)
+                .when(member.age.between(21, 30)).then(1)
+                .otherwise(3);
+
+        List<Tuple> result = queryFactory
+                .select(member.username, member.age, rankPath)
+                .from(member)
+                .orderBy(rankPath.desc())
+                .fetch();
+
+        //Querydsl은 자바 코드로 작성하기 때문에 rankPath 처럼 복잡한 조건을 변수로 선언해서 select 절, orderBy 절에서 함께 사용할 수 있다.
+
+        for (Tuple tuple : result) {
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);
+            Integer rank = tuple.get(rankPath);
+            System.out.println("username = " + username + " age = " + age + " rank = " + rank);
+
+            /** 결과
+             * username = member4 age = 40 rank = 3
+             * username = member1 age = 10 rank = 2
+             * username = member2 age = 20 rank = 2
+             * username = member3 age = 30 rank = 1
+             */
         }
     }
 }
