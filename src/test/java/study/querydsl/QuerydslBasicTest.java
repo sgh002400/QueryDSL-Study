@@ -13,7 +13,9 @@ import study.querydsl.domain.QTeam;
 import study.querydsl.domain.Team;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnit;
 
 import java.util.List;
 
@@ -27,6 +29,9 @@ public class QuerydslBasicTest {
 
     @PersistenceContext
     EntityManager em;
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
 
     JPAQueryFactory queryFactory;
 
@@ -442,4 +447,34 @@ public class QuerydslBasicTest {
          */
     }
 
+    @Test
+    public void fetchJoinNo() throws Exception {
+
+        em.flush();
+        em.clear(); //fetch join 테스트 할 때는 영속성 컨텍스트에 있는 애들을 안지워주면 결과를 제대로 보기 어렵기 때문에 깔끔히 비워줌.
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam()); //이미 로딩된 엔티티인지 아니면 초기화가 되지 않은 엔티티인지 알려주는 애임
+        assertThat(loaded).as("페치 조인 미적용").isFalse();
+    }
+
+    @Test
+    public void fetchJoinUse() throws Exception {
+
+        em.flush();
+        em.clear();
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .join(member.team, team).fetchJoin()
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+        assertThat(loaded).as("페치 조인 적용").isTrue();
+    }
 }
