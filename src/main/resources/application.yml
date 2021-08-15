@@ -9,9 +9,9 @@ spring:
       ddl-auto: create
     properties:
       hibernate:
-      # show_sql: true
-      format_sql: true
-
+        use_sql_comments: true #QueryDsl이 생성하는 JPQL을 볼 수 있다.
+        # show_sql: true
+        format_sql: true
 logging.level:
   org.hibernate.SQL: debug
 # org.hibernate.type: trace

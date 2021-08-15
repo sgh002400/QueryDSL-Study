@@ -13,12 +13,24 @@ import study.querydsl.domain.Team;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import static org.assertj.core.api.Assertions.*;
+import static study.querydsl.domain.QMember.*;
+
 @SpringBootTest
 @Transactional
 public class QuerydslBasicTest {
 
     @PersistenceContext
     EntityManager em;
+
+    JPAQueryFactory queryFactory;
+
+    /**
+     * 동시성 문제는 JPAQueryFactory를
+     * 생성할 때 제공하는 EntityManager(em)에 달려있다. 스프링 프레임워크는 여러 쓰레드에서 동시에 같은
+     * EntityManager에 접근해도, 트랜잭션 마다 별도의 영속성 컨텍스트를 제공하기 때문에, 동시성 문제는
+     * 걱정하지 않아도 된다.
+     */
 
     @BeforeEach
     public void before() {
@@ -48,7 +60,7 @@ public class QuerydslBasicTest {
                 .setParameter("username", "member1")
                 .getSingleResult();
 
-        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
     @Test
@@ -63,6 +75,37 @@ public class QuerydslBasicTest {
                 .where(m.username.eq("member1"))//파라미터 바인딩 처리
                 .fetchOne();
 
-        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void startQuerydsl2() {
+
+        //member1 찾기.
+        QMember m = new QMember("m");
+        Member findMember = queryFactory
+                .select(m)
+                .from(m)
+                .where(m.username.eq("member1")) //파라미터가 알아서 안전하게 바인딩 된다!
+                .fetchOne();
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void startQuerydsl3() {
+        /**
+         * QMember qMember = new QMember("m"); //별칭 직접 지정
+         * QMember qMember = QMember.member; //기본 인스턴스 사용
+         */
+
+        //기본 인스턴스를 static import와 함께 사용
+        //member1 찾기
+        Member findMember = queryFactory
+                .select(member) //Qmember.member -> static import 한거
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+        assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 }
