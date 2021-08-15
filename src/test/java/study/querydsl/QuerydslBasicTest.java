@@ -3,6 +3,7 @@ package study.querydsl;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -637,6 +638,36 @@ public class QuerydslBasicTest {
              * username = member2 age = 20 rank = 2
              * username = member3 age = 30 rank = 1
              */
+        }
+    }
+
+    @Test
+    public void constant() {
+        List<Tuple> result = queryFactory
+                .select(member.username, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+        // 위와 같이 최적화가 가능하면 SQL에 constant 값을 넘기지 않는다. 상수를 더하는 것 처럼 최적화가 어려우면 SQL에 constant 값을 넘긴다.
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @Test
+    public void concat() {
+        
+        //{username}_{age}를 만들고 싶음
+        List<String> result = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue())) //age와 _는 타입이 다르기 때문에 type cast 해줌.
+                //문자가 아닌 다른 타입들은 stringValue()로 문자로 변환할 수 있다.
+                // 이 방법은 ENUM을 처리할 때도 자주 사용한다.
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
         }
     }
 }
