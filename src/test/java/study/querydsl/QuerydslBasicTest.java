@@ -2,6 +2,7 @@ package study.querydsl;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -15,6 +16,7 @@ import study.querydsl.domain.Member;
 import study.querydsl.domain.QMember;
 import study.querydsl.domain.QTeam;
 import study.querydsl.domain.Team;
+import study.querydsl.dto.MemberDto;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -669,5 +671,101 @@ public class QuerydslBasicTest {
         for (String s : result) {
             System.out.println("s = " + s);
         }
+    }
+
+    /** 프로젝션이란? - select 절에 어떤 값을 가져올지 정하는거
+     * 프로젝션 대상이 둘 이상이면 튜플이나 DTO로 조회
+     */
+    @Test
+    public void tupleProjection() {
+
+        List<Tuple> result = queryFactory
+                .select(member.username, member.age)
+                .from(member)
+                .fetch();
+
+        for (Tuple tuple : result) {
+            String username = tuple.get(member.username);
+            Integer age = tuple.get(member.age);
+            System.out.println("username=" + username);
+            System.out.println("age=" + age);
+        }
+    }
+
+    @Test
+    public void findDtoByJPQL() {
+
+        List<MemberDto> result = em.createQuery(
+                        "select new study.querydsl.dto.MemberDto(m.username, m.age) " +
+                                "from Member m", MemberDto.class)
+                .getResultList();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+
+        /** 단점
+         * 순수 JPA에서 DTO를 조회할 때는 new 명령어를 사용해야함
+         * DTO의 package이름을 다 적어줘야해서 지저분함
+         * 생성자 방식만 지원함
+         */
+    }
+
+    /** QueryDsl로 결과를 DTO 반환할 때 사용하는 방식
+     * 프로퍼티 접근
+     * 필드 직접 접근
+     * 생성자 사용
+     */
+    @Test
+    public void findDtoBySetter() {
+
+        //1. 프로퍼티 접근 - Setter를 통해 접근
+
+        //QueryDsl이 일단 MemberDto를 생성하고 값을 set하기 때문에 기본 생성자가 필요하다!
+        List<MemberDto> result = queryFactory
+                .select(Projections.bean(MemberDto.class, member.username, member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoByField() {
+
+        //2. 필드 직접 접근
+
+        //MemberDto의 필드에 값을 바로 넣어준다(setter 필요 없음). 마찬가지로 기본 생성자 필요함!
+        List<MemberDto> result = queryFactory
+                .select(Projections.fields(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    public void findDtoByConstructor() {
+
+        //3. 생성자 사용
+
+        //MemberDto의 생성자를 사용해서 넣어주는 방식. 생성자와 타입이 맞아야 들어간다.
+        List<MemberDto> result = queryFactory
+                .select(Projections.constructor(MemberDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
+
     }
 }
