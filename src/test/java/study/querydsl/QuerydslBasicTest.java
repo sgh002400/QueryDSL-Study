@@ -13,6 +13,8 @@ import study.querydsl.domain.Team;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.domain.QMember.*;
 
@@ -108,4 +110,48 @@ public class QuerydslBasicTest {
                 .fetchOne();
         assertThat(findMember.getUsername()).isEqualTo("member1");
     }
+
+    @Test
+    public void search() {
+        //select, from을 selectFrom으로 합칠 수 있다.
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1")
+                        .and(member.age.eq(10)))
+                .fetchOne();
+
+        /**
+         * where()에 파라미터로 검색조건을 추가하면 AND 조건이 추가됨
+         * 이 경우 null 값은 무시 메서드 추출을 활용해서 동적 쿼리를 깔끔하게 만들 수 있음
+         */
+
+        assertThat(findMember.getUsername()).isEqualTo("member1");
+    }
+
+    @Test
+    public void searchAndParam() { //AND 조건을 파라미터로 처리
+        List<Member> result1 = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1"),
+                        member.age.eq(10))
+                .fetch();
+        assertThat(result1.size()).isEqualTo(1);
+    }
+
+    /** 모두 가능!
+     * member.username.eq("member1") // username = 'member1'
+     * member.username.ne("member1") //username != 'member1'
+     * member.username.eq("member1").not() // username != 'member1'
+     * member.username.isNotNull() //이름이 is not null
+     * member.age.in(10, 20) // age in (10,20)
+     * member.age.notIn(10, 20) // age not in (10, 20)
+     * member.age.between(10,30) //between 10, 30
+     * member.age.goe(30) // age >= 30
+     * member.age.gt(30) // age > 30
+     * member.age.loe(30) // age <= 30
+     * member.age.lt(30) // age < 30
+     * member.username.like("member%") //like 검색
+     * member.username.contains("member") // like ‘%member%’ 검색
+     * member.username.startsWith("member") //like ‘member%’ 검색
+     */
 }
