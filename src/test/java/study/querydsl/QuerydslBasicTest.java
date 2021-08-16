@@ -18,6 +18,7 @@ import study.querydsl.domain.QMember;
 import study.querydsl.domain.QTeam;
 import study.querydsl.domain.Team;
 import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 
 import javax.persistence.EntityManager;
@@ -790,5 +791,22 @@ public class QuerydslBasicTest {
             System.out.println("memberDto = " + memberDto);
         }
 
+    }
+
+    @Test
+    public void findDtoByQueryProjection() {
+
+        //생성자 사용 방법 dto도 Q파일로 만들어서 사용하는 방법
+
+        //DTO에 QueryDSL 어노테이션을 유지해야 하는 점과 DTO까지 Q 파일을 생성해야 하는 단점이 있다.
+        //QueryDsl에 의존성이 생기므로 라이브러리를 뺐을 때 코드가 영향을 받는다.
+        List<MemberDto> result = queryFactory
+                .select(new QMemberDto(member.username, member.age)) //타입이 다르거나 생성자와 안맞으면 컴파일 시점에 오류를 내줌 -> 실제로 생성자도 호출함
+                .from(member)
+                .fetch();
+
+        for (MemberDto memberDto : result) {
+            System.out.println("memberDto = " + memberDto);
+        }
     }
 }
