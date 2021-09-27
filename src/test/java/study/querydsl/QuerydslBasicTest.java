@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
@@ -9,6 +10,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -808,5 +810,42 @@ public class QuerydslBasicTest {
         for (MemberDto memberDto : result) {
             System.out.println("memberDto = " + memberDto);
         }
+    }
+
+
+    /**
+     * 적 쿼리를 해결하는 두가지 방식
+     * BooleanBuilder
+     * Where 다중 파라미터 사용
+     */
+    @Test
+    public void dynamic_BooleanBuilder() throws Exception {
+
+        String usernameParam = "member1";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember1(usernameParam, ageParam);
+        Assertions.assertThat(result.size()).isEqualTo(1);
+    }
+
+    private List<Member> searchMember1(String usernameCond, Integer ageCond) { //파라미터의 값이 null이냐 아니냐에 따라 쿼리가 동적으로 바뀌어야 하는 상황임
+
+       BooleanBuilder builder = new BooleanBuilder(); //앞에 Null이 들어오지 않게 코드를 작성한다는 가정하에 초기값을 넣어둘 수도 있다.
+        //BooleanBuilder(member.username.eq(usernameCond)) 이런식으로
+
+        if (usernameCond != null) {
+            builder.and(member.username.eq(usernameCond));
+        }
+
+        if (ageCond != null) {
+            builder.and(member.age.eq(ageCond));
+        }
+
+        //두 개의 값이 모두 있다면 and 조건으로 쿼리에 파라미터 바인딩이 되지만 만약 null 인게 있다면 쿼리에 포함이 되지 않는다.
+
+        return queryFactory
+                .selectFrom(member)
+                .where(builder) //where에 builder를 넣음으로써 해결! / 이 builder 역시 and, or 조립이 가능하다
+                .fetch();
     }
 }
