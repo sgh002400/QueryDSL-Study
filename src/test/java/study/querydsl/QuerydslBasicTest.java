@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.domain.Member;
 import study.querydsl.domain.QMember;
@@ -878,5 +879,53 @@ public class QuerydslBasicTest {
 
     private BooleanExpression allEq(String usernameCond, Integer ageCond) {
         return usernameEq(usernameCond).and(ageEq(ageCond)); //Null은 잘 처리 해줘야됨!
+    }
+
+    /** 수정, 삭제 벌크 연산 **/
+    @Test
+    //@Commit //트랜잭션이 반영되도록 해줌
+    public void bulkUpdate() {
+
+        //20살 이하는 비회원으로 변경하고 싶은 상황
+
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        /** 벌크 연산은 영속성 컨텍스트를 신경 쓰지 않고 DB에 바로 쿼리를 날린다.
+         * 그렇기 때문에 영속성 컨텍스트와 DB의 상태가 달라지는 문제가 발생한다!
+         * 하지만 DB에서 select 해서 데이터를 가져와도 영속성 컨텍스트가 우선권을 가지기 때문에 가져온 정보를 버리고 영속성 컨텍스트의 값을 택한다!!
+         *
+         * 해결 방법! -> 벌크 연산 후엔 em.flush(), em.clear()를 해준다!
+         */
+
+        em.flush();
+        em.clear();
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member1 : result) {
+            System.out.println("member1 = " + member1);
+        }
+    }
+
+    @Test
+    public void bulkAdd() { //멤버의 나이를 모두 한 살 더하는 벌크 쿼리
+        long count = queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+    }
+
+    @Test
+    public void bulkDelete() { //18살 이상의 모든 멤버를 지우는 벌크 쿼리리
+       long count = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
     }
 }
