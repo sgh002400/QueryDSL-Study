@@ -81,7 +81,7 @@ class MemberJpaRepositoryTest {
             해결방법 : limit를 두거나 기본 조건을 넣는다!
         **/
 
-        List<MemberTeamDto> result = memberJpaRepository.searchByBuilder(condition);
+        List<MemberTeamDto> result = memberJpaRepository.searchByBuilder(condition); //search로 바꾸면 Qtype의 MemberJpaRepository의 search 메서드 테스트 가능!
 
         assertThat(result).extracting("username").containsExactly("member4");
     }
